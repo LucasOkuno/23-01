@@ -8,9 +8,9 @@ author:
 output: pdf_document
 ---
 
-```{r packages, message = F}
+```{r packages, message = F, echo = F}
 library(tidyverse)
-library(pander)
+library(knitr)
 # Separador decimal nos resultados: ","
 options(OutDec = ",")
 set.seed(123)
@@ -19,8 +19,8 @@ knitr::opts_chunk$set(echo=FALSE)
 
 O que falta:
 
-- explicitar g\* em 1b:d, deixar as integrais como feito no fim do item (a)
-- item 2
+- explicitar g\* em 1(b)(c)(d) deixar as integrais como feito no fim do item (a), e tambem verdadeiros valores das integrais
+- item 2: escrever f(.) direito,
 
 ## Exercício 1
 
@@ -28,18 +28,19 @@ O que falta:
 
 Para calcular a integral, primeiro reescrevemos os limites de integração com auxílio da função indicadora:
 
-$$\Theta = \int_0^\infty \int_0^x g(x,y) dy dx = \int_0^\infty  \int_0^\infty g(x,y) \ \mathbb{I}{(y)}_{(0,x)} dy dx$$
+$$\theta = \int_0^\infty \int_0^x g(x,y) dy dx = \int_0^\infty  \int_0^\infty g(x,y) \ \mathbb{I}{(y)}_{(0,x)} dy dx$$
 
-Para ajustar os intervalos, propomos a seguinte mudança de variáveis, que mapeia a região de integração no quadrado unitário.
+Para ajustar os intervalos, propomos a seguinte mudança de variáveis, que mapeia a região de integração no quadrado unitário
 
 $$u = 1 - e^{-x},\ v = 1 - e^{-y} \Rightarrow x = -log(1 - u),\ y = -log(1 - v) $$
 
 Note que a transformação funciona pois se $x = 0$ então $u = 0$ e se $x \rightarrow \infty$ então $u \rightarrow 1$, de forma análoga para $y$ e $v$. Calculamos $J(u,v)$ usando a matriz de derivadas parciais da transformação inversa
 
 $$
+J(u,v) =
 \begin{pmatrix}
-\frac{\partial u}{\partial x} & \frac{\partial u}{\partial y} \\
-\frac{\partial v}{\partial x} & \frac{\partial v}{\partial y}
+\frac{\partial x}{\partial u} & \frac{\partial y}{\partial u} \\
+\frac{\partial x}{\partial v} & \frac{\partial y}{\partial v}
 \end{pmatrix}
 =
 \begin{pmatrix}
@@ -49,22 +50,20 @@ $$
  \ \Rightarrow \ |J(u,v)| = \frac{1}{(1 - u)(1 - v)}
 $$
 
-Dessa forma, podemos reescrever a integral como sendo
+Dessa forma, reescrevemos a integral no novo sistema de coordenadas
 
-$$\Theta = \int_0^1  \int_0^1 g(u,v) \ \mathbb{I}{(v)}_{(0, -log(1 - u))} \frac{1}{(1 - u)(1 - v)} dv du$$
+$$\theta = \int_0^1  \int_0^1 g(u,v) \ \mathbb{I}{(v)}_{(0, u)} |J(u,v)| dv du$$
 
-Para se resolver integrais utilizando o método de Monte Carlo, é proposto o seguinte algoritmo:
+Como estamos utilizando a distribuição Uniforme(0,1) temos que $g^{*}(u, v) = g(u, v) * |J(u, v)|$. Podemos agora resolver as integrais via método de Monte Carlo através do seguinte algoritmo:
 
-1. Gere uma dupla $(u,v)$ com $u \sim U(0,1)$ e $v \sim U(0,1)$ independentes
-2. Calcule $g^*(u, v) = g(u, v) * J(u, v)$
+1. Gere duplas $(u_{i},v_{i})$ com $u \sim U(0,1)$ e $v \sim U(0,1),\ i = 1, ..., R$
+2. Calcule $g^*(u, v)$
 3. Faça $\hat{\theta} = \frac 1 n \sum_{j = 1}^M g_i(u, v)$
 
-### b.
+Com auxílio de software computacional, escrevemos um programa em linguagem R para resolver as integrais com 50000 amostras de pares da distribuição Uniforme(0,1) disponível no Apêndice.
 
-Vamos agora calcular
-$$\int_0^\infty \int_0^x \exp^{-(x+y)} dydx$$
+```{r }
 
-```{r}
 # Numero de amostras
 M <- 50000
 
@@ -90,26 +89,36 @@ jac <- function(u, v) {
     1 / ((1 - u) * (1 - v)))
 }
 
-# obtem g*(.) a partir de g(.) a partir da transformação adotada
-gstar <- function(g) {
-  return(function(x, y) {
+# obtem g*(.) a partir de g(.) usando a transformação exponencial
+gstar <- function(g, x, y) {
+  return(function(x, y) {         ##  y em (0, x)
     g(-log(1 - x), - log(1 - y)) * ind(y, 0, x) * jac(x, y)
   })
 }
 
-## Integra uma função em (0, inf) atraves do método
-## de Monte Carlo, retorna estimativa e E.P.
-integral_mc_unif <- function(gstar, M) {
+## Integra uma função em y \in (0, x), x \in (0, inf)  atraves
+## do método de Monte Carlo, retorna estimativa e E.P.
+integral_mc_unif <- function(gstar, R = 50000) {
   return(
-   gera_pares_unif(M) |>
+   gera_pares_unif(R) |>
    mutate(
      gs = gstar(u, v)) |>
    summarise(
      theta_hat = mean(gs),
-     ep_mc = sqrt(var(gs) / M))
+     ep_mc = sqrt(var(gs) / R))
   )
 }
 
+```
+
+### b.
+
+Vamos agora calcular (deixei esse aqui como exemplo pros dois de baixo era bom substituir g pela funcao no segundo passo)
+$$\int_0^\infty \int_0^x \exp^{-(x+y)} dydx = \int_0^1  \int_0^1 g(u,v) \ \mathbb{I}{(v)}_{(0, u)} \frac{1}{(1 - u)(1 - v)} dv du$$
+
+$$
+
+```{r}
 g1 <- function(x, y) {
   return(
     exp(-(x + y)))
@@ -117,7 +126,7 @@ g1 <- function(x, y) {
 labs <- c("$\\hat{\\theta}$", "$\\widehat{Var}(\\hat{\\theta})$")
 
 # Estimativa e EP da integral
-gstar(g1) |> integral_mc_unif(M) |> knitr::kable(col.names = labs)
+gstar(g1) |> integral_mc_unif() |> kable(col.names = labs)
 ```
 
 ### c.
@@ -131,7 +140,7 @@ g2 <- function(x, y) {
          exp(-(x^2 + y^2)))
 }
 # Estimativa e EP da integral
-gstar(g2) |> integral_mc_unif(M) |> knitr::kable(col.names = labs)
+gstar(g2) |> integral_mc_unif() |> knitr::kable(col.names = labs)
 
 ```
 
@@ -145,7 +154,7 @@ g3 <- function(x, y) {
          exp(-(x + y)^2))
 }
 # Estimativa e EP da integral
-gstar(g3) |> integral_mc_unif(M) |> knitr::kable(col.names = labs)
+gstar(g3) |> integral_mc_unif() |> knitr::kable(col.names = labs)
 
 ```
 
@@ -162,7 +171,7 @@ Invertendo a função, obtemos $f^{-1}(x) = ± (3^(1/3) (-log(x))^(1/3))$.
 
 ```{r }
 finv <- function(x) {
-  ifelse()
+  ifelse() ## escrever o modulo
    (3^(1/3) (-log(x))^(1/3))
   }
 ```
@@ -173,7 +182,7 @@ Para resolver a integral utilizando o método de Monte Carlo, é proposto o segu
 
 1. Gere $u \sim N(0,1)$
 2. Calcule $f^*(u) = \frac{f(u)}{g(u)}$, onde $g(.)$ é a f.d.p de uma Normal Padrão
-3. Faça $\hat{\theta} = \frac 1 n \sum_{j = 1}^M f^{*}_i\*(u)$
+3. Faça $\hat{\theta} = \frac 1 n \sum_{j = 1}^M f^{*}\*(u_i)$
 
 ```{r }
 
@@ -218,7 +227,8 @@ tabela <- u |>
   mutate(fs = fstar(x)) |>
   group_by(R) |>
   summarise(theta_hat = mean(fs),
-            ep = sd(fs) / n() )
+            ep = sqrt(var(fs) / n() ))
+
 ```
 
 # Apêndice: códigos utilizados na análise
@@ -227,7 +237,5 @@ tabela <- u |>
 
 ```
 
-```{r }
 
-
-```
+$$
