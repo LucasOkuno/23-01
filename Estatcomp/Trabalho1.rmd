@@ -3,7 +3,7 @@ title: "SME0806 - Estatística Computacional - Trabalho 1"
 author:
 - Alvaro Valentim (10392150)
 - Francisco Rosa Dias de Miranda (4402962)
-- nome 3 (nusp)
+- Victor Botelho Cardoso (11953925)
 - nome 4 (nusp)
 output:
   html_document:
@@ -198,13 +198,41 @@ Vamos gerar amostras de $X$ através do _método da inversão_:
 1. Gere $u \sim U(0,1)$
 2. Faça $x = f^{-1}(u)$
 
-Invertendo a função, obtemos $f^{-1}(x) = ± (3^(1/3) (-log(x))^(1/3))$.
+```{r}
+f <- function(x) exp(-abs(x)^3/3)
+curve(f, -5, 5, xlab = "y", ylab = "g(y)", col = "red", lwd = 2)
+```
+
+Invertendo a função, obtemos $f^{-1}(x) = ± (\sqrt[3]{3} (\sqrt[3]{-log(x)})$.
 
 ```{r }
 finv <- function(x) {
-  ifelse() ## escrever o modulo
-   (3^(1/3) (-log(x))^(1/3))
+  ifelse(x > 0, (3^(1/3))*(-log(x))^(1/3), -(3^(1/3))*(-log(x))^(1/3)) ## escrever o modulo
   }
+```
+```{r}
+set.seed(12345)
+n1 <- 1000
+n2 <- 5000
+n3 <- 10000
+x1 <- sapply(runif(n1), finv)
+x2 <- sapply(runif(n2), finv)
+x3 <- sapply(runif(n3), finv)
+```
+Histograma para amostra com tamanho 1000.
+
+```{r}
+hist(x1, breaks = 30, main = paste("Amostra com n =", n1))
+```
+Histograma para amostra tamanho 5000.
+
+```{r}
+hist(x2, breaks = 30, main = paste("Amostra com n =", n2))
+```
+Histograma para amostra tamanho 10000.
+
+```{r}
+hist(x3, breaks = 30, main = paste("Amostra com n =", n3))
 ```
 
 ### b.
