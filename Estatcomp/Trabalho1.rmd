@@ -1,11 +1,14 @@
 ---
 title: "SME0806 - Estatística Computacional - Trabalho 1"
 author:
-  - nome 1 (nusp)
-  - Francisco Rosa Dias de Miranda (4402962)
-  - nome 3 (nusp)
-  - nome 4 (nusp)
-output: pdf_document
+- Alvaro Valentim (10392150)
+- Francisco Rosa Dias de Miranda (4402962)
+- nome 3 (nusp)
+- nome 4 (nusp)
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
 ---
 
 ```{r packages, message = F, echo = F}
@@ -16,6 +19,7 @@ options(OutDec = ",")
 set.seed(123)
 knitr::opts_chunk$set(echo=FALSE)
 ```
+
 
 O que falta:
 
@@ -28,11 +32,15 @@ O que falta:
 
 Para calcular a integral, primeiro reescrevemos os limites de integração com auxílio da função indicadora:
 
-$$\theta = \int_0^\infty \int_0^x g(x,y) dy dx = \int_0^\infty  \int_0^\infty g(x,y) \ \mathbb{I}{(y)}_{(0,x)} dy dx$$
+$$
+  \theta = \int_0^\infty \int_0^x g(x,y) dy dx = \int_0^\infty  \int_0^\infty g(x,y) \ \mathbb{I}{(y)}_{(0,x)} dy dx \ \ \ \ \ (1)
+$$
 
 Para ajustar os intervalos, propomos a seguinte mudança de variáveis, que mapeia a região de integração no quadrado unitário
 
-$$u = 1 - e^{-x},\ v = 1 - e^{-y} \Rightarrow x = -log(1 - u),\ y = -log(1 - v) $$
+$$
+u = 1 - e^{-x},\ v = 1 - e^{-y} \Rightarrow x = -log(1 - u),\ y = -log(1 - v) \ \ \ \ \ (2)
+$$
 
 Note que a transformação funciona pois se $x = 0$ então $u = 0$ e se $x \rightarrow \infty$ então $u \rightarrow 1$, de forma análoga para $y$ e $v$. Calculamos $J(u,v)$ usando a matriz de derivadas parciais da transformação inversa
 
@@ -113,11 +121,12 @@ integral_mc_unif <- function(gstar, R = 50000) {
 
 ### b.
 
-Vamos agora calcular (deixei esse aqui como exemplo pros dois de baixo era bom substituir g pela funcao no segundo passo)
-$$\int_0^\infty \int_0^x \exp^{-(x+y)} dydx = \int_0^1  \int_0^1 g(u,v) \ \mathbb{I}{(v)}_{(0, u)} \frac{1}{(1 - u)(1 - v)} dv du$$
-
+Vamos transformar $g(x,y)$ em $g(u,v)$, para isso, utilizaremos as transformações em $(2)$.
 $$
-
+g(x,y) = exp^{-(x+y)} \Rightarrow g(u,v) = exp^{-(-log(1-u)-log(1-v))} = exp^{log(1-u)} exp^{log(1-v)} = (1-u)(1-v)
+$$
+Agora, substituindo em $(1)$, temos:
+$$\int_0^\infty \int_0^x \exp^{-(x+y)} dydx = \int_0^1  \int_0^1 (1-u)(1-v) \ \mathbb{I}{(v)}_{(0, u)} \frac{1}{(1 - u)(1 - v)} dv du$$
 ```{r}
 g1 <- function(x, y) {
   return(
@@ -129,9 +138,24 @@ labs <- c("$\\hat{\\theta}$", "$\\widehat{Var}(\\hat{\\theta})$")
 gstar(g1) |> integral_mc_unif() |> kable(col.names = labs)
 ```
 
-### c.
+Considerando o valor real de $1/2$, conseguimos chegar relativamente próximo com esse método de aproximação, porém dependendo do caso, pode não ser satisfatório.
 
-$$\int_0^\infty \int_0^x \exp^{-(x^{2}+y^{2})} dydx$$
+### c.
+Repetindo o mesmo processo para o item $(c)$, com base na tranformação em $(2)$, temos:
+
+$$g(x,y) = exp^{-(x^2+y^2)} \Rightarrow g(u,v) = exp^{-((-log^2(1-u))+(-log^2(1-v)))}$$
+
+$$
+\begin{align}
+  g(x,y) = exp^{-(x^2+y^2)} \Rightarrow g(u,v) &= exp^{-((-log^2(1-u))+(-log^2(1-v)))} \\
+        &= exp^{-( log^2(1-u) + log^2(1-v) )} \\
+        &= exp^{-log^2(1-u)}  exp^{-log^2(1-v)} \\
+        &= (1-u)^{-2}(1-v)^{-2}
+\end{align}
+$$
+Logo,
+
+$$\int_0^\infty \int_0^x \exp^{-(x^{2}+y^{2})} dydx = \int_0^1  \int_0^1 (1-u)^{-2}(1-v)^{-2} \ \mathbb{I}{(v)}_{(0, u)} \frac{1}{(1 - u)(1 - v)} dv du $$
 
 ```{r}
 
@@ -144,9 +168,14 @@ gstar(g2) |> integral_mc_unif() |> knitr::kable(col.names = labs)
 
 ```
 
+Vemos que podemos nos aproximar relativamente do resultado de $\pi/8 \approx 0.3927$, mas como no caso anterior, dependendo do problema, talvez não seja próximo o suficiente. 
+
 ### d.
 
-$$\int_0^\infty \int_0^x \exp^{-(x+y)^{2}} dydx$$
+Utilizando como base a resposta do item $(b)$, temos:
+
+$$\int_0^\infty \int_0^x \exp^{-(x+y)^{2}} dydx = \int_0^1  \int_0^1 [(1-u)(1-v)]^{-2} \ \mathbb{I}{(v)}_{(0, u)} \frac{1}{(1 - u)(1 - v)} dv du$$
+
 
 ```{r }
 g3 <- function(x, y) {
@@ -157,6 +186,8 @@ g3 <- function(x, y) {
 gstar(g3) |> integral_mc_unif() |> knitr::kable(col.names = labs)
 
 ```
+
+Considerando a resposta de $1/4$, nossa modelo se aproxima bem, porém pode não ser próximo o suficiente dependendo do caso, assim como nos demais itens.
 
 ## Exercício 2
 
